@@ -4,6 +4,7 @@ from sys import maxint
 from matplotlib import pyplot as plt
 
 MAX_ITERATIONS = 8
+SHOW_IMAGES = True
 
 def kmeans(data, k):
     # Generate K centroids
@@ -116,7 +117,11 @@ def get_k():
 
 def calc_sse(data, labels, k, centroids):
     '''
-    Sum of distance between each row and the centroid of its labeled cluster squared.
+    description: Sum of distance between each row and the centroid of its labeled cluster squared.
+    input: data <list of lists> the dataset, labels <list of ints> are a series of values
+               which corresponds to each row in data, k <int> number of centroids,
+               centroids <list of k centroid lists> the current centroid sample.
+    return: sse <list> Sum of squared error for each iteration of kmeans.
     '''
     se = []
 
@@ -125,12 +130,85 @@ def calc_sse(data, labels, k, centroids):
         for _ in range(k):
 
             centroid_pos = labels[pos]
-            # difference = digit_row - centroids[centroid_pos]
             difference = [np.subtract(x1, x2) for (x1, x2) in zip(digit_row, centroids[centroid_pos])]
             k_centroid_err.append(np.linalg.norm(difference) **2)
         se.append(min(k_centroid_err))
     sse = np.sum(se)
     return sse
+
+def compute_covariance(data):
+    data = np.array(data)
+    mean = np.mean(data)
+    # n = len(data)
+    # covariance_matrix = []
+    # for sample in data:
+    #     difference = sample - mean
+    #     covariance_matrix.append(np.dot(difference, difference.T))
+    #     m = np.dot(difference, difference.T)
+    #     print(difference)
+    #     # print("covariance_matrix: ", covariance_matrix)
+    # # sum_cov = np.sum(covariance_matrix)
+    # sum_cov = covariance_matrix
+    # # sum_cov = np.divide(np.array(sum_cov), n)
+    # # print("shape: ", sum_cov.shape)
+    # print("shape cov: ", np.cov(data))
+    # return sum_cov
+
+    # X = data
+    # avg = average(X, axis=1, returned=True)
+    # X-= avg[:, None]
+    # X_T = X.T
+    # fact = X.shape[1] - 1
+    # c = np.dot(X, X_T.conj())
+    # c *= 1. / np.float64(fact)
+    # return c.squeeze()
+    cov = np.cov(data)
+    # print("Covariance Matrix: ", cov)
+    w, v = np.linalg.eig(cov)
+    # print("Eigenvectors: ", v)
+    print("Covariance shape", cov.shape)
+    print("shape of w:", w.shape)
+    print("shape of v:", v.shape)
+    print("Covariance shape[0]", cov[0].shape)
+    # abs_w = [abs(i) for i in w]
+    # print("type(abs_w): ", type(abs_w))
+    # print("abs_w: ", abs_w)
+    eig_vals = np.sort(w)
+    eig_val_indexs = np.argsort(w)
+    eig_val_lrgst_indexs = eig_val_indexs[-10:]
+
+    # eig_vals = np.sort(abs_w)
+    print("type(eig_vals): ", type(eig_vals))
+    print("eig_vals: ", eig_vals[-10:])
+    largest_eig_vals = eig_vals[-10:]
+    largest_eig_decreasing = []
+    eig_lrgst_indexs_decreasing = []
+    for eig in range(1, 11):
+        largest_eig_decreasing.append(largest_eig_vals[-eig])
+        eig_lrgst_indexs_decreasing.append(eig_val_lrgst_indexs[-eig])
+    largest_eig_decreasing = np.array(largest_eig_decreasing)
+    print("Largest Eig Values Decreasing: ", largest_eig_decreasing)
+
+    largest_eigvector_decreasing = []
+    for i in eig_lrgst_indexs_decreasing:
+        largest_eigvector_decreasing.append(v[:,i])
+    print("In order eigen vectors: ", largest_eigvector_decreasing)
+    if SHOW_IMAGES:
+        import cv2
+        print("Shape of eigenvector: ", largest_eigvector_decreasing[0].shape)
+        print("Shape of eigenvector[0]: ", largest_eigvector_decreasing[0][0].shape)
+        for pos, ev in enumerate(largest_eigvector_decreasing):
+            ev[0] = np.reshape(ev[0], (28, 28))
+            ev[0] = cv2.normalize(ev[0], norm_type=cv2.NORM_MINMAX)
+            cv2.imshow("Eigenvector{}".format(pos), ev[0])
+            cv2.waitKey(0)
+    # plt.imshow(np.reshape(v[0][0], (28, 28)))
+    # for i in range(len(w)):
+    #     print("Value: ", w[i])
+    #     print("Corresponding Vector: ", v[:, i])
+    return largest_eig_decreasing
+
+
 
 def plot_sse(sses, iterations):
     if isinstance(iterations, int):
