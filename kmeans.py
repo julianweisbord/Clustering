@@ -171,10 +171,6 @@ def compute_eigens(data):
         cv2.imshow("Mean Image", mean_img_rescale)
         cv2.waitKey(0)
 
-    # plt.imshow(np.reshape(v[0][0], (28, 28)))
-    # for i in range(len(w)):
-    #     print("Value: ", w[i])
-    #     print("Corresponding Vector: ", v[:, i])
     return largest_eig_decreasing
 
 def project(lrg_eigenvectors, data):
