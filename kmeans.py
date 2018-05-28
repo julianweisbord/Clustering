@@ -4,7 +4,7 @@ from sys import maxint
 from matplotlib import pyplot as plt
 
 MAX_ITERATIONS = 8
-SHOW_IMAGES = True
+SHOW_IMAGES = False
 
 def kmeans(data, k):
     # Generate K centroids
@@ -120,29 +120,6 @@ def compute_eigens(data):
     mean = np.mean(data)
     mean_img = np.mean(data, axis=0)
     datap = (data-np.mean(data.T, axis=1)).T
-    # n = len(data)
-    # covariance_matrix = []
-    # for sample in data:
-    #     difference = sample - mean
-    #     covariance_matrix.append(np.dot(difference, difference.T))
-    #     m = np.dot(difference, difference.T)
-    #     print(difference)
-    #     # print("covariance_matrix: ", covariance_matrix)
-    # # sum_cov = np.sum(covariance_matrix)
-    # sum_cov = covariance_matrix
-    # # sum_cov = np.divide(np.array(sum_cov), n)
-    # # print("shape: ", sum_cov.shape)
-    # print("shape cov: ", np.cov(data))
-    # return sum_cov
-
-    # X = data
-    # avg = average(X, axis=1, returned=True)
-    # X-= avg[:, None]
-    # X_T = X.T
-    # fact = X.shape[1] - 1
-    # c = np.dot(X, X_T.conj())
-    # c *= 1. / np.float64(fact)
-    # return c.squeeze()
     cov = np.cov(datap)
     # print("Covariance Matrix: ", cov)
     w, v = np.linalg.eig(cov)
@@ -189,7 +166,7 @@ def compute_eigens(data):
         mean_img = np.reshape(mean_img, (28, 28))
         mean_img_rescale = cv2.normalize(np.absolute(mean_img), alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
         cv2.namedWindow("Mean Image", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Mean Image', 600,600)
+        cv2.resizeWindow('Mean Image', 600, 600)
         cv2.imshow("Mean Image", mean_img_rescale)
         cv2.waitKey(0)
 
@@ -198,56 +175,24 @@ def compute_eigens(data):
     #     print("Value: ", w[i])
     #     print("Corresponding Vector: ", v[:, i])
     return largest_eig_decreasing
-from numpy import mean,cov,cumsum,dot,linalg,size,flipud
 
-def princomp(data,numpc=0):
-     # computing eigenvalues and eigenvectors of covariance matrix
-    M = (data-np.mean(data.T, axis=1)).T # subtract the mean (along columns)
-    print("M: ", M)
-    [latent,coeff] = linalg.eig(cov(M))
-    p = size(coeff,axis=1)
-    idx = np.argsort(latent) # sorting the eigenvalues
-    idx = idx[::-1]       # in ascending order
-    # sorting eigenvectors according to the sorted eigenvalues
-    coeff = coeff[:,idx]
-    latent = latent[idx] # sorting eigenvalues
-    if numpc < p and numpc >= 0:
-        coeff = coeff[:,range(numpc)] # cutting some PCs if needed
-    score = dot(coeff.T,M) # projection of the data in the new space
-    return coeff,score,latent
+def project(lrg_eigenvectors, data):
 
-def test(data):
-    from pylab import imread,subplot,imshow,title,gray,figure,show,NullLocator
-    print("data shape", data.shape)
-    # data = mean(data,0) # to get a 2-D array
-    full_pc = size(data) # numbers of all the principal components
-    print("full_pc", full_pc)
-    i = 1
-    dist = []
-    for numpc in range(0,full_pc+10,10): # 0 10 20 ... full_pc
-        coeff, score, latent = princomp(data,numpc)
-        datar = dot(coeff,score).T + mean(data, axis=0) # image reconstruction
-        print("datar[0]", datar[0])
-        # difference in Frobenius norm
-        dist.append(linalg.norm(data-datar,'fro'))
-        # showing the pics reconstructed with less than 50 PCs
-        if numpc <= 50:
-            ax = subplot(2,3,i,frame_on=False)
-            ax.xaxis.set_major_locator(NullLocator()) # remove ticks
-            ax.yaxis.set_major_locator(NullLocator())
-            i += 1
-            print("shape datar[0]", datar[0].shape)
-            imshow(np.reshape(np.absolute(datar[0]), (28,28)))
-            show()
-            # imshow(flipud(datar))
-            title('PCs # '+str(numpc))
-            gray()
+    if SHOW_IMAGES:
+        import cv2
+        prev_i = 0
+        for i in range(10, len(data), 10):
+            projected = lrg_eigenvectors.T.dot(data[prev_i:i])
 
-    figure()
-    imshow(flipud(data))
-    title('numpc FULL')
-    gray()
-    show()
+            print("projected.shape: ", projected.shape)
+            project_img = np.reshape(projected, (28, 28))
+            project_img_rescale = cv2.normalize(np.absolute(project_img), alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+            cv2.namedWindow("Projected Image", cv2.WINDOW_NORMAL)
+            cv2.resizeWindow('Projected Image', 600, 600)
+            cv2.imshow("Projected Image", project_img_rescale)
+            cv2.waitKey(0)
+            prev_i = i
+
 
 def plot_sse(sses, iterations):
     if isinstance(iterations, int):

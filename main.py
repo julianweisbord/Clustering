@@ -11,26 +11,27 @@ def main():
     else:
         fl = DATA_PATH
     data = load_data(fl)
-    # print("data[0]", data[0])
-
-    # Part 1
-    k = 2
-    SSEs, labels, C, iterations = km.kmeans(data, k)
-    km.plot_sse(SSEs, iterations)
-
-    lowest_sses = []
-    for k in range(2, 11):
-        sses_k = []
-        for i in range(10):
-            SSEs, labels, C, iterations = km.kmeans(data, k)
-            sses_k.append(SSEs)
-        lowest_sses.append(min(sses_k))
-        print("Lowest SSE for k = {}: {}".format(k, lowest_sses[-1]))
-
-    km.plot_sse(lowest_sses, [2,11])
+#     # print("data[0]", data[0])
+#
+#     # Part 1
+#     k = 2
+#     SSEs, labels, C, iterations = km.kmeans(data, k)
+#     km.plot_sse(SSEs, iterations)
+#
+#     lowest_sses = []
+#     for k in range(2, 11):
+#         sses_k = []
+#         for i in range(10):
+#             SSEs, labels, C, iterations = km.kmeans(data, k)
+#             sses_k.append(SSEs)
+#         lowest_sses.append(min(sses_k))
+#         print("Lowest SSE for k = {}: {}".format(k, lowest_sses[-1]))
+#
+#     km.plot_sse(lowest_sses, [2,11])
 
     # Part 2
     largest_eigs = km.compute_eigens(data)
+    km.project(largest_eigs, data)
     # km.test(data)
     # print("largest_eigs: ", largest_eigs)
 
