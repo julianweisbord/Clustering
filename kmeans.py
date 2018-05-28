@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 
 MAX_ITERATIONS = 8
 SHOW_IMAGES = False
+PLOT = False
 
 def kmeans(data, k):
     # Generate K centroids
@@ -195,16 +196,17 @@ def project(lrg_eigenvectors, data):
 
 
 def plot_sse(sses, iterations):
-    if isinstance(iterations, int):
-        iterations = [i for i in range(1, iterations + 1)]
-        iter_str = "Iterations"
-    else:
-        iterations = [i for i in range(iterations[0], iterations[1])]
-        iter_str = "K values"
+    if PLOT:
+        if isinstance(iterations, int):
+            iterations = [i for i in range(1, iterations + 1)]
+            iter_str = "Iterations"
+        else:
+            iterations = [i for i in range(iterations[0], iterations[1])]
+            iter_str = "K values"
 
-    print("sses: ", sses)
-    print("iterations", iterations)
-    plt.plot(iterations, sses)
-    plt.xlabel(iter_str)
-    plt.ylabel("SSE's")
-    plt.show()
+        print("sses: ", sses)
+        print("iterations", iterations)
+        plt.plot(iterations, sses)
+        plt.xlabel(iter_str)
+        plt.ylabel("SSE's")
+        plt.show()
