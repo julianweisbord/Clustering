@@ -49,12 +49,9 @@ def gen_centroids(data, k):
         c_pos = np.random.randint(0, len(data))
         centroid_positions.append(c_pos)
         centroids.append(data[c_pos])
-        # print("len centroids: ", len(centroids))
-        # print("centroid_positions", centroids)
         print("Centroids: ", centroid_positions)
 
     return centroids, centroid_positions
-
 
 
 def label_data(data, C):
@@ -79,41 +76,23 @@ def label_data(data, C):
 
 def gen_new_clusters(data, C, labels, k):
 
-    sums = []
     mean_centroids = []
+    sums = []
 
-    for centroid in C:
+    for _ in C:
         sums.append([np.zeros(data.shape[1]).flatten(), 0])
-
     for i, label in enumerate(labels):
         sums[label][0] = np.add(sums[label][0], data[i])
         sums[label][1] += 1
-
-    for i, row in enumerate(sums):
-        mean_centroids.append(np.divide(row[0], row[1]))
+    for i, sample in enumerate(sums):
+        mean_centroids.append(np.divide(sample[0], sample[1]))
 
     return mean_centroids
-    # new_clusters = []
-    # # Identify each samples closest cluster
-    # for cluster in range(k):
-    #     points_around_cluster = []
-    #     for sample_pos, sample in enumerate(data):
-    #         if labels[sample_pos] != cluster:
-    #             continue
-    #         points_around_cluster.append(sample)
-    #     # Sum elementwise all assigned samples of a cluster and divide by total num samples
-    #     # Assign cluster to that vector.
-    #     summed_samples = [sum(i) for i in zip(*points_around_cluster)]
-    #     new_clusters.append(summed_samples)
-
-    # return new_clusters
 
 
 def distance(point, center):
     return np.linalg.norm(point - center)
 
-def get_k():
-    pass
 
 def calc_sse(data, labels, k, centroids):
     '''
@@ -136,9 +115,11 @@ def calc_sse(data, labels, k, centroids):
     sse = np.sum(se)
     return sse
 
-def compute_covariance(data):
+def compute_eigens(data):
     data = np.array(data)
     mean = np.mean(data)
+    mean_img = np.mean(data, axis=0)
+    datap = (data-np.mean(data.T, axis=1)).T
     # n = len(data)
     # covariance_matrix = []
     # for sample in data:
@@ -162,14 +143,14 @@ def compute_covariance(data):
     # c = np.dot(X, X_T.conj())
     # c *= 1. / np.float64(fact)
     # return c.squeeze()
-    cov = np.cov(data)
+    cov = np.cov(datap)
     # print("Covariance Matrix: ", cov)
     w, v = np.linalg.eig(cov)
     # print("Eigenvectors: ", v)
     print("Covariance shape", cov.shape)
     print("shape of w:", w.shape)
     print("shape of v:", v.shape)
-    print("Covariance shape[0]", cov[0].shape)
+    print("Covariance shape[1]", cov[1].shape)
     # abs_w = [abs(i) for i in w]
     # print("type(abs_w): ", type(abs_w))
     # print("abs_w: ", abs_w)
@@ -179,7 +160,7 @@ def compute_covariance(data):
 
     # eig_vals = np.sort(abs_w)
     print("type(eig_vals): ", type(eig_vals))
-    print("eig_vals: ", eig_vals[-10:])
+    # print("eig_vals: ", eig_vals[-10:])
     largest_eig_vals = eig_vals[-10:]
     largest_eig_decreasing = []
     eig_lrgst_indexs_decreasing = []
@@ -192,33 +173,93 @@ def compute_covariance(data):
     largest_eigvector_decreasing = []
     for i in eig_lrgst_indexs_decreasing:
         largest_eigvector_decreasing.append(v[:,i])
-    print("In order eigen vectors: ", largest_eigvector_decreasing)
+    print("In order eigen vectors[0]: ", largest_eigvector_decreasing[0])
     if SHOW_IMAGES:
         import cv2
         print("Shape of eigenvector: ", largest_eigvector_decreasing[0].shape)
-        print("Shape of eigenvector[0]: ", largest_eigvector_decreasing[0][0].shape)
+        # largest_eigvector_decreasing = np.divide(largest_eigvector_decreasing, np.absolute(largest_eigvector_decreasing[-1]))
         for pos, ev in enumerate(largest_eigvector_decreasing):
-            ev[0] = np.reshape(ev[0], (28, 28))
-            ev[0] = cv2.normalize(ev[0], norm_type=cv2.NORM_MINMAX)
-            cv2.imshow("Eigenvector{}".format(pos), ev[0])
+            ev = np.reshape(ev, (28, 28))
+            ev_rescale = cv2.normalize(np.absolute(ev), alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+            cv2.namedWindow("Eigenvector", cv2.WINDOW_NORMAL)
+            cv2.resizeWindow('Eigenvector', 600,600)
+            cv2.imshow("Eigenvector", ev_rescale)
             cv2.waitKey(0)
+
+        mean_img = np.reshape(mean_img, (28, 28))
+        mean_img_rescale = cv2.normalize(np.absolute(mean_img), alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        cv2.namedWindow("Mean Image", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Mean Image', 600,600)
+        cv2.imshow("Mean Image", mean_img_rescale)
+        cv2.waitKey(0)
+
     # plt.imshow(np.reshape(v[0][0], (28, 28)))
     # for i in range(len(w)):
     #     print("Value: ", w[i])
     #     print("Corresponding Vector: ", v[:, i])
     return largest_eig_decreasing
+from numpy import mean,cov,cumsum,dot,linalg,size,flipud
 
+def princomp(data,numpc=0):
+     # computing eigenvalues and eigenvectors of covariance matrix
+    M = (data-np.mean(data.T, axis=1)).T # subtract the mean (along columns)
+    print("M: ", M)
+    [latent,coeff] = linalg.eig(cov(M))
+    p = size(coeff,axis=1)
+    idx = np.argsort(latent) # sorting the eigenvalues
+    idx = idx[::-1]       # in ascending order
+    # sorting eigenvectors according to the sorted eigenvalues
+    coeff = coeff[:,idx]
+    latent = latent[idx] # sorting eigenvalues
+    if numpc < p and numpc >= 0:
+        coeff = coeff[:,range(numpc)] # cutting some PCs if needed
+    score = dot(coeff.T,M) # projection of the data in the new space
+    return coeff,score,latent
 
+def test(data):
+    from pylab import imread,subplot,imshow,title,gray,figure,show,NullLocator
+    print("data shape", data.shape)
+    # data = mean(data,0) # to get a 2-D array
+    full_pc = size(data) # numbers of all the principal components
+    print("full_pc", full_pc)
+    i = 1
+    dist = []
+    for numpc in range(0,full_pc+10,10): # 0 10 20 ... full_pc
+        coeff, score, latent = princomp(data,numpc)
+        datar = dot(coeff,score).T + mean(data, axis=0) # image reconstruction
+        print("datar[0]", datar[0])
+        # difference in Frobenius norm
+        dist.append(linalg.norm(data-datar,'fro'))
+        # showing the pics reconstructed with less than 50 PCs
+        if numpc <= 50:
+            ax = subplot(2,3,i,frame_on=False)
+            ax.xaxis.set_major_locator(NullLocator()) # remove ticks
+            ax.yaxis.set_major_locator(NullLocator())
+            i += 1
+            print("shape datar[0]", datar[0].shape)
+            imshow(np.reshape(np.absolute(datar[0]), (28,28)))
+            show()
+            # imshow(flipud(datar))
+            title('PCs # '+str(numpc))
+            gray()
+
+    figure()
+    imshow(flipud(data))
+    title('numpc FULL')
+    gray()
+    show()
 
 def plot_sse(sses, iterations):
     if isinstance(iterations, int):
         iterations = [i for i in range(1, iterations + 1)]
+        iter_str = "Iterations"
     else:
         iterations = [i for i in range(iterations[0], iterations[1])]
+        iter_str = "K values"
 
     print("sses: ", sses)
     print("iterations", iterations)
     plt.plot(iterations, sses)
-    plt.xlabel("Iterations")
+    plt.xlabel(iter_str)
     plt.ylabel("SSE's")
     plt.show()
